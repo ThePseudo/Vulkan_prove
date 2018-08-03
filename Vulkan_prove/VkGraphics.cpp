@@ -803,11 +803,13 @@ void VkGraphics::init()
 
 	// Shader try
 	_base_vertex_shader = ShaderFactory::loadVertexShader(_device, "./Shaders/vertex.spv");
+	_base_fragment_shader = ShaderFactory::loadFragmentShader(_device, "./Shaders/fragment.spv");
 }
 
 void VkGraphics::destroy()
 {
 	// Destroy shader
+	ShaderFactory::destroyShader(_device, _base_fragment_shader);
 	ShaderFactory::destroyShader(_device, _base_vertex_shader);
 
 	// Clean up.

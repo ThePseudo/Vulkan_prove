@@ -113,4 +113,5 @@ private:
 
 	// SHADER TEST
 	vk::ShaderModule						_base_vertex_shader;
+	vk::ShaderModule						_base_fragment_shader;
 };
