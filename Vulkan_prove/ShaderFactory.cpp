@@ -1,31 +1,51 @@
 #include "ShaderFactory.h"
 
-vk::ShaderModule ShaderFactory::loadVertexShader(vk::Device &device, string inputFile)
+/*
+__forceinline vk::ShaderModule ShaderFactory::loadVertexShader(vk::Device &device, string inputFile)
 {
-	vector<char> shaderText = readShader(inputFile);
+	return createBasicShader(device, shader_type::tVertexShader, inputFile);
+}
 
-	vk::PipelineShaderStageCreateInfo vertex_shader_info;
-	vertex_shader_info.setPNext(nullptr)
-		.setPSpecializationInfo(nullptr)
-		.setFlags(vk::PipelineShaderStageCreateFlags())
-		.setStage(vk::ShaderStageFlagBits::eVertex)
-		.setPName("main");
+__forceinline vk::ShaderModule ShaderFactory::loadFragmentShader(vk::Device & device, string inputfile)
+{
+	return createBasicShader(device, shader_type::tFragmentShader, inputfile);
+}*/
 
-	vk::ShaderModuleCreateInfo vertex_shader_module_info;
-	vertex_shader_module_info
-		.setPNext(nullptr)
-		.setCodeSize(shaderText.size())
-		.setPCode(reinterpret_cast<uint32_t*>(shaderText.data()))
-		.setFlags(vk::ShaderModuleCreateFlags());
+vk::ShaderModule ShaderFactory::loadVertexShader(vk::Device & device, string inputFile)
+{
+	return createBasicShader(device, shader_type::tVertexShader, inputFile);
+}
 
-	vk::Result res = device.createShaderModule(&vertex_shader_module_info, nullptr, &vertex_shader_info.module);
-	assert(res == vk::Result::eSuccess);
-	return vertex_shader_info.module;
+vk::ShaderModule ShaderFactory::loadFragmentShader(vk::Device & device, string inputfile)
+{
+	return createBasicShader(device, shader_type::tFragmentShader, inputfile);
 }
 
 void ShaderFactory::destroyShader(vk::Device & device, vk::ShaderModule &shader)
 {
 	device.destroyShaderModule(shader, nullptr);
+}
+
+vk::ShaderModule ShaderFactory::createBasicShader(vk::Device & device, shader_type type, string inputFile)
+{
+	vector<char> shaderText = readShader(inputFile);
+	vk::PipelineShaderStageCreateInfo shader_info;
+	shader_info.setPNext(nullptr)
+		.setPSpecializationInfo(nullptr)
+		.setFlags(vk::PipelineShaderStageCreateFlags())
+		.setPName("main");
+		shader_info.setStage(static_cast<vk::ShaderStageFlagBits>(type));
+
+	vk::ShaderModuleCreateInfo shader_module_info;
+	shader_module_info
+		.setPNext(nullptr)
+		.setCodeSize(shaderText.size())
+		.setPCode(reinterpret_cast<uint32_t*>(shaderText.data()))
+		.setFlags(vk::ShaderModuleCreateFlags());
+
+	vk::Result res = device.createShaderModule(&shader_module_info, nullptr, &shader_info.module);
+	assert(res == vk::Result::eSuccess);
+	return shader_info.module;
 }
 
 vector<char> ShaderFactory::readShader(string inputFile)
