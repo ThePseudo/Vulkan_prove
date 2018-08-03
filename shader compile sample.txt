@@ -1,0 +1,1 @@
+glslangValidator -e main -o test.spv -V -D .\VertexShader.vert
