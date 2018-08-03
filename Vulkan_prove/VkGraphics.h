@@ -66,6 +66,7 @@ private:
 	void vkInitPipelineLayout();
 	void vkInitDescriptorSet();
 	void vkCreateRenderPass();
+	void vkInitFrameBuffer();
 
 	void vkDestroySwapchain();
 
@@ -110,6 +111,8 @@ private:
 
 	uniform_data							_uniform_data;
 	Camera									_camera; // The default camera
+
+	std::vector<vk::Framebuffer>			_frame_buffers;
 
 	// SHADER TEST
 	vk::ShaderModule						_base_vertex_shader;

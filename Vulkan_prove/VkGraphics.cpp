@@ -763,6 +763,32 @@ void VkGraphics::vkCreateRenderPass()
 	assert(res == vk::Result::eSuccess);
 }
 
+void VkGraphics::vkInitFrameBuffer()
+{
+	vk::ImageView attachments[2];
+	attachments[1] = _depth.imageView;
+
+	vk::FramebufferCreateInfo fb_ci;
+	fb_ci.setPNext(nullptr)
+		.setRenderPass(_render_pass)
+		.setAttachmentCount(2)
+		.setPAttachments(attachments)
+		.setWidth(_window.resolution().width)
+		.setHeight(_window.resolution().height)
+		.setLayers(1);
+
+	_frame_buffers.resize(2);
+	vk::Result res;
+	for (uint32_t i = 0; i < _swapchain_image_count; ++i)
+	{
+		attachments[0] = _buffers[i].view;
+		res = _device.createFramebuffer(&fb_ci, nullptr, &_frame_buffers[i]);
+		assert(res == vk::Result::eSuccess);
+	}
+
+	// TODO: Add instructions from part 12
+}
+
 void VkGraphics::vkDestroySwapchain()
 {
 	for (uint32_t i = 0; i < _swapchain_image_count; ++i)
@@ -800,6 +826,8 @@ void VkGraphics::init()
 	vkInitDescriptorSet();
 	// Render pass creation
 	vkCreateRenderPass();
+	// Frame buffer init
+	vkInitFrameBuffer();
 
 	// Shader try
 	_base_vertex_shader = ShaderFactory::loadVertexShader(_device, "./Shaders/vertex.spv");
@@ -813,6 +841,12 @@ void VkGraphics::destroy()
 	ShaderFactory::destroyShader(_device, _base_vertex_shader);
 
 	// Clean up.
+
+	for (uint32_t i = 0; i < _swapchain_image_count; i++) {
+		vkDestroyFramebuffer(_device, _frame_buffers[i], NULL);
+	}
+	_frame_buffers.clear();
+
 	_device.destroyRenderPass(_render_pass, nullptr);
 	_device.destroySemaphore(_image_acquired_semaphore, nullptr);
 
