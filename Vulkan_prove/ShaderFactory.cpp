@@ -1,16 +1,5 @@
 #include "ShaderFactory.h"
 
-/*
-__forceinline vk::ShaderModule ShaderFactory::loadVertexShader(vk::Device &device, string inputFile)
-{
-	return createBasicShader(device, shader_type::tVertexShader, inputFile);
-}
-
-__forceinline vk::ShaderModule ShaderFactory::loadFragmentShader(vk::Device & device, string inputfile)
-{
-	return createBasicShader(device, shader_type::tFragmentShader, inputfile);
-}*/
-
 vk::ShaderModule ShaderFactory::loadVertexShader(vk::Device & device, string inputFile)
 {
 	return createBasicShader(device, shader_type::tVertexShader, inputFile);
