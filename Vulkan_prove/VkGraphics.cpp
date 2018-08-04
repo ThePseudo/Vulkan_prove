@@ -2,7 +2,6 @@
 
 using namespace glm;
 
-
 VkGraphics::VkGraphics()
 {
 	// Create window
@@ -245,6 +244,16 @@ void VkGraphics::vkCreateCommandBuffer()
 	}
 }
 
+void VkGraphics::vkBeginCommandBuffer()
+{
+	vk::CommandBufferBeginInfo cb_i;
+	cb_i.setPNext(nullptr)
+		.setFlags(vk::CommandBufferUsageFlags())
+		.setPInheritanceInfo(nullptr);
+	vk::Result res = _command_buffer.begin(&cb_i);
+	assert(res == vk::Result::eSuccess);
+}
+
 void VkGraphics::vkCreateSwapchain()
 {
 	// Iterate over each queue to learn whether it supports presenting:
@@ -290,6 +299,10 @@ void VkGraphics::vkCreateSwapchain()
 			"present\n";
 		exit(-1);
 	}
+
+	// Retrieving queues
+	_device.getQueue(_graphics_queue_family_index, 0, &_graphics_queue);
+	_device.getQueue(_present_queue_family_index, 0, &_present_queue);
 
 	// List of vk::Formats supported
 	uint32_t formatCount;
@@ -455,6 +468,7 @@ void VkGraphics::vkInitDepthBuffer()
 {
 	vk::ImageCreateInfo image_ci;
 	const vk::Format depth_format = vk::Format::eD16Unorm;
+
 	vk::FormatProperties formatProperties;
 	_gpus[0].getFormatProperties(depth_format, &formatProperties);
 	if (formatProperties.linearTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
@@ -720,7 +734,7 @@ void VkGraphics::vkCreateRenderPass()
 		.setFinalLayout(vk::ImageLayout::ePresentSrcKHR)
 		.setFlags(vk::AttachmentDescriptionFlags());
 
-	attachments[1].setFormat(_format)
+	attachments[1].setFormat(_depth.format)
 		.setSamples(vk::SampleCountFlagBits::e1)
 		.setLoadOp(vk::AttachmentLoadOp::eClear)
 		.setStoreOp(vk::AttachmentStoreOp::eStore)
@@ -782,11 +796,13 @@ void VkGraphics::vkInitFrameBuffer()
 	for (uint32_t i = 0; i < _swapchain_image_count; ++i)
 	{
 		attachments[0] = _buffers[i].view;
+
 		res = _device.createFramebuffer(&fb_ci, nullptr, &_frame_buffers[i]);
 		assert(res == vk::Result::eSuccess);
 	}
 
-	// TODO: Add instructions from part 12
+	executeEndCommandBuffer();
+	executeQueueCommandBuffer();
 }
 
 void VkGraphics::vkDestroySwapchain()
@@ -816,8 +832,9 @@ void VkGraphics::init()
 	vkCreateSwapchain();
 	// Command buffer creation
 	vkCreateCommandBuffer();
-	// Depth buffer init
+	// Depth buffer init and startup
 	vkInitDepthBuffer();
+	vkBeginCommandBuffer();
 	// Uniform buffer init
 	vkInitUniformBuffer();
 	// Pipeline layout init
@@ -900,4 +917,46 @@ bool VkGraphics::memoryTypeFromProperties(uint32_t typeBits, vk::MemoryPropertyF
 		typeBits >>= 1;
 	}
 	return false;
+}
+
+void VkGraphics::executeEndCommandBuffer()
+{
+	try {
+		_command_buffer.end();
+	}
+	catch (exception e) {
+		std::cout << e.what() << std::endl;
+	}
+}
+
+void VkGraphics::executeQueueCommandBuffer()
+{
+	const vk::CommandBuffer cmd_bufs[] = { _command_buffer };
+	vk::FenceCreateInfo fenceInfo;
+	vk::Fence drawFence;
+	fenceInfo.setPNext(nullptr)
+		.setFlags(vk::FenceCreateFlags());
+	_device.createFence(&fenceInfo, nullptr, &drawFence);
+
+	vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	vk::SubmitInfo submitInfo;
+	submitInfo.setPNext(nullptr)
+		.setWaitSemaphoreCount(0)
+		.setPWaitSemaphores(nullptr)
+		.setPWaitDstStageMask(&pipelineStageFlags)
+		.setCommandBufferCount(1)
+		.setPCommandBuffers(cmd_bufs)
+		.setSignalSemaphoreCount(0)
+		.setPSignalSemaphores(nullptr);
+
+	vk::Result res = _graphics_queue.submit(1, &submitInfo, drawFence);
+	assert(res == vk::Result::eSuccess);
+
+	// Is there another way better than busy waiting?
+	do {
+		res = _device.waitForFences(1, &drawFence, true, FENCE_TIMEOUT);
+	} while (res == vk::Result::eTimeout);
+	assert(res == vk::Result::eSuccess);
+
+	_device.destroyFence(drawFence, nullptr);
 }

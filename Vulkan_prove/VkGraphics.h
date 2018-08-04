@@ -60,6 +60,7 @@ private:
 	void vkEnumerateDevices();
 	void vkCreateDevice();
 	void vkCreateCommandBuffer();
+	void vkBeginCommandBuffer();
 	void vkCreateSwapchain();
 	void vkInitDepthBuffer();
 	void vkInitUniformBuffer();
@@ -75,6 +76,8 @@ private:
 	void destroy();
 	std::vector<vk::ExtensionProperties> getExtensionsProperties();
 	bool memoryTypeFromProperties(uint32_t typeBits, vk::MemoryPropertyFlags requirement_mask, uint32_t *typeIndex);
+	void executeEndCommandBuffer();
+	void executeQueueCommandBuffer();
 	// Private data
 	Window									_window;
 
@@ -90,6 +93,8 @@ private:
 	std::vector<vk::PhysicalDevice>			_gpus;
 	vk::Device								_device;
 	std::vector<vk::QueueFamilyProperties>	_queue_properties;
+	vk::Queue								_graphics_queue;
+	vk::Queue								_present_queue;
 	uint32_t								_queue_family_count;
 	uint32_t								_graphics_queue_family_index;
 	uint32_t								_present_queue_family_index;
